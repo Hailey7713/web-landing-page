@@ -1,0 +1,90 @@
+.specialities-section {
+  padding: 80px 0;
+  background-color: #fff;
+}
+
+.specialities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.speciality-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 30px 25px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #eee;
+}
+
+.speciality-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.speciality-icon {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.speciality-card:hover .speciality-icon {
+  transform: scale(1.2);
+}
+
+.speciality-title {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.speciality-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 2px;
+  background-color: #f39c12;
+  transition: width 0.3s ease;
+}
+
+.speciality-card:hover .speciality-title::after {
+  width: 80px;
+}
+
+.speciality-description {
+  color: #666;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .specialities-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .specialities-grid {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+    padding: 0 20px;
+  }
+  
+  .speciality-card {
+    padding: 25px 20px;
+  }
+}

@@ -1,0 +1,112 @@
+/* Groundnut Services Section */
+.services-section {
+  padding: 5rem 0;
+  background-color: #f9f9f9;
+}
+
+.services-section .section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: #333;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.services-section .section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background-color: #e67e22;
+}
+
+.services-intro {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 3rem;
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 0 1rem;
+}
+
+.service-card {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+  border: 1px solid #eee;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.service-icon {
+  font-size: 2.5rem;
+  color: #e67e22;
+  margin-bottom: 1.5rem;
+}
+
+.service-title {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.service-description {
+  color: #666;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Dark mode styles */
+.dark-mode .services-section {
+  background-color: #1a1a1a;
+}
+
+.dark-mode .service-card {
+  background: #2d2d2d;
+  border-color: #3d3d3d;
+}
+
+.dark-mode .service-title {
+  color: #f0f0f0;
+}
+
+.dark-mode .service-description {
+  color: #bbb;
+}
+
+.dark-mode .services-section .section-title {
+  color: #f0f0f0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+    padding: 0 2rem;
+  }
+  
+  .services-section {
+    padding: 3rem 0;
+  }
+  
+  .services-section .section-title {
+    font-size: 2rem;
+  }
+}
