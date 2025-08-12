@@ -15,6 +15,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const auth = getAuth();
 
   // Load user data from Firestore
@@ -24,8 +25,11 @@ const Profile = () => {
         setLoading(true);
         const user = auth.currentUser;
         if (!user) {
-          throw new Error('No authenticated user found');
+          setIsAuthenticated(false);
+          return;
         }
+        
+        setIsAuthenticated(true);
 
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
@@ -121,6 +125,24 @@ const Profile = () => {
     return (
       <div className="profile-container">
         <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="profile-container">
+        <div className="login-prompt">
+          <h2>Please Sign In</h2>
+          <p>You need to be signed in to view your profile.</p>
+          <button 
+            className="login-button"
+            onClick={() => window.location.href = '/login'}
+          >
+            Sign In
+          </button>
+        </div>
       </div>
     );
   }
