@@ -300,23 +300,25 @@ const ProductsPage = () => {
                 <div className="product-details">
                   <h3 className="product-name">{product.name}</h3>
                   <p className="price">₹{product.price.toLocaleString()}</p>
-                  <div className="product-buttons">
+                  <div className="product-actions">
                     <button 
                       className="add-to-cart"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      Add to Cart
-                    </button>
-                    <button 
-                      className="product-info"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/product/${product.id}`);
+                        handleAddToCart(product);
                       }}
-                      aria-label={`View details for ${product.name}`}
                     >
-                      <FaInfoCircle className="info-icon" />
-                      Info
+                      <span className="cart-icon">🛒</span> Add to Cart
+                    </button>
+                    <button 
+                      className="buy-now"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(product);
+                        navigate('/cart');
+                      }}
+                    >
+                      Buy Now
                     </button>
                   </div>
                 </div>

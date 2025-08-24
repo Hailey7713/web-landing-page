@@ -94,7 +94,12 @@ const CartPage = () => {
             <span>Total</span>
             <span>₹{calculateTotal().toLocaleString()}</span>
           </div>
-          <button className="checkout-btn">Proceed to Checkout</button>
+          <button 
+            className="checkout-btn"
+            onClick={() => navigate('/delivery')}
+          >
+            Proceed to Checkout
+          </button>
           <button 
             onClick={() => navigate('/products')} 
             className="continue-shopping-btn"

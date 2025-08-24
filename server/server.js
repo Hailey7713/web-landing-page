@@ -3,6 +3,13 @@ const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./config/database');
 const Contact = require('./models/Contact');
+const twilio = require('twilio');
+
+// Initialize Twilio client
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 // Initialize Express app
 const app = express();
@@ -53,6 +60,62 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+// Send SMS Notification
+const sendOrderNotification = async (orderDetails) => {
+  try {
+    const message = `
+      🛒 New Order Received! 🛒
+      
+      Order #${orderDetails.orderNumber}
+      
+      👤 Customer Details:
+      Name: ${orderDetails.fullName}
+      Phone: ${orderDetails.phone}
+      Email: ${orderDetails.email}
+      
+      🏠 Delivery Address:
+      ${orderDetails.address}
+      
+      💰 Payment Method: Cash on Delivery
+      
+      Thank you for your order!
+    `;
+
+    await twilioClient.messages.create({
+      body: message,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: process.env.OWNER_PHONE_NUMBER
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending SMS:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// API endpoint to send order notification
+app.post('/api/orders/notify', async (req, res) => {
+  try {
+    const { orderDetails } = req.body;
+    
+    if (!orderDetails) {
+      return res.status(400).json({ success: false, error: 'Order details are required' });
+    }
+    
+    const result = await sendOrderNotification(orderDetails);
+    
+    if (result.success) {
+      res.json({ success: true, message: 'Notification sent successfully' });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('Error in order notification:', error);
+    res.status(500).json({ success: false, error: 'Failed to send notification' });
+  }
+});
 
 // Routes
 app.get('/api', (req, res) => {
