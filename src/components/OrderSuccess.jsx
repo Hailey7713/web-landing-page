@@ -1,12 +1,50 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaCheckCircle, FaPhone, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaShoppingBag, FaHome, FaShoppingCart } from 'react-icons/fa';
+import { FaCheckCircle, FaPhone, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaShoppingBag, FaHome, FaShoppingCart, FaTruck } from 'react-icons/fa';
 import './OrderSuccess.css';
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { orderDetails, orderNumber, notificationSent } = location.state || {};
+
+  // Function to estimate delivery date based on city
+  const getEstimatedDeliveryDate = () => {
+    if (!orderDetails?.address) return '3-5 business days';
+    
+    const today = new Date();
+    const address = orderDetails.address.toLowerCase();
+    let daysToAdd = 3; // Default delivery time
+    
+    // Check for major cities and adjust delivery time
+    if (address.includes('mumbai') || address.includes('pune') || address.includes('delhi') || 
+        address.includes('bangalore') || address.includes('hyderabad') || address.includes('chennai')) {
+      daysToAdd = 2; // 2 days for metro cities
+    } else if (address.includes('kolkata') || address.includes('ahmedabad') || address.includes('surat') || 
+               address.includes('jaipur') || address.includes('lucknow')) {
+      daysToAdd = 3; // 3 days for other major cities
+    } else {
+      daysToAdd = 5; // 5 days for other locations
+    }
+    
+    // Add business days (excluding weekends)
+    let count = 0;
+    const deliveryDate = new Date(today);
+    while (count < daysToAdd) {
+      deliveryDate.setDate(deliveryDate.getDate() + 1);
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      if (deliveryDate.getDay() !== 0 && deliveryDate.getDay() !== 6) {
+        count++;
+      }
+    }
+    
+    return deliveryDate.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   if (!orderDetails) {
     return (
@@ -41,7 +79,11 @@ const OrderSuccess = () => {
           </div>
           <div className="detail-item">
             <FaCalendarAlt className="detail-icon" />
-            <span>Order Date: {new Date().toLocaleDateString()}</span>
+            <span>Order Date: {new Date().toLocaleDateString('en-IN')}</span>
+          </div>
+          <div className="detail-item">
+            <FaTruck className="detail-icon" />
+            <span>Estimated Delivery: <strong>{getEstimatedDeliveryDate()}</strong></span>
           </div>
           <div className="detail-item">
             <FaMapMarkerAlt className="detail-icon" />
