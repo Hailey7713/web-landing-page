@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from './CartContext';
 import { FaArrowLeft, FaShoppingCart, FaStar, FaHeart, FaShare, FaLeaf, FaSeedling, FaFire, FaWeight } from 'react-icons/fa';

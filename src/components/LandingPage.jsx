@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCart } from './CartContext';
 import { getAuth } from 'firebase/auth';
-import { auth } from '../firebase';
 import './LandingPage.css';
 
 function LandingPage() {
@@ -107,22 +106,9 @@ function LandingPage() {
             <a href="#products" onClick={(e) => { e.preventDefault(); scrollToSection('products'); }}>Products</a>
             <a href="#about" onClick={(e) => { e.preventDefault(); scrollToSection('about'); }}>About</a>
             <a href="#contact" onClick={(e) => { e.preventDefault(); scrollToSection('contact'); }}>Contact</a>
-            {currentUser ? (
-              <button 
-                className="btn btn-profile" 
-                onClick={() => navigate('/profile')}
-                title="View Profile"
-              >
-                👤 Profile
-              </button>
-            ) : (
-              <button 
-                className="btn btn-primary" 
-                onClick={() => navigate('/login')}
-              >
-                Login
-              </button>
-            )}
+            <Link to="/login" className="btn btn-primary">
+              Login
+            </Link>
             <button 
               className="btn btn-cart" 
               onClick={() => navigate('/cart')}

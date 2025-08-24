@@ -1,40 +1,52 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  signInWithGoogle, 
-  signUpWithEmail, 
-  logInWithEmail, 
-  auth, 
-  signOut as logOut,
-  signInWithPhone,
-  verifyOTP,
-  setUpRecaptcha
+  signInWithGoogle,
+  logInWithEmailAndPassword,
+  registerWithEmailAndPassword,
+  auth,
+  GoogleAuthProvider
 } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { FcGoogle } from 'react-icons/fc';
 import './Login.css';
 
 function Login() {
-  const [isLogin, setIsLogin] = useState(true); // Default to login view
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [isLogin, setIsLogin] = useState(true); // Toggle between login and signup
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    phone: '',
-    otp: ''
+    password: ''
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, loadingAuth] = useAuthState(auth);
-  const recaptchaContainer = useRef(null);
   const navigate = useNavigate();
+
+  // Handle Google Sign In
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      await signInWithGoogle();
+      // Navigation will be handled by the auth state change effect
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      setError(error.message || 'Failed to sign in with Google');
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
-      // Pass state to indicate successful login
-      navigate('/', { state: { fromLogin: true } });
+      setSuccess('Logged in successfully!');
+      setError('');
+      // Navigate to home after showing success message
+      const timer = setTimeout(() => {
+        navigate('/', { state: { fromLogin: true } });
+      }, 1500);
+      return () => clearTimeout(timer);
     }
   }, [user, navigate]);
 
@@ -47,365 +59,115 @@ function Login() {
     setError(''); // Clear error when user types
   };
 
-  // Set up reCAPTCHA on component mount
-  useEffect(() => {
-    if (loginMethod === 'phone' && recaptchaContainer.current) {
-      try {
-        // Clear any existing reCAPTCHA
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear();
-        }
-        // Set up new reCAPTCHA
-        setUpRecaptcha('recaptcha-container');
-      } catch (error) {
-        console.error('reCAPTCHA setup error:', error);
-        setError('Failed to load reCAPTCHA. Please refresh the page and try again.');
-      }
-    }
-  }, [loginMethod]);
-
-  const handlePhoneSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    if (!formData.phone) {
-      setError('Please enter your phone number');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const phoneNumber = `+${formData.phone.replace(/\D/g, '')}`; // Ensure proper phone number format
-      const appVerifier = window.recaptchaVerifier;
-      
-      const { success, error } = await signInWithPhone(phoneNumber, appVerifier);
-      
-      if (success) {
-        setConfirmationResult(confirmationResult);
-        setShowOtpInput(true);
-      } else {
-        throw new Error(error || 'Failed to send verification code');
-      }
-    } catch (err) {
-      console.error('Phone authentication error:', err);
-      setError(err.message || 'Failed to send verification code. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOtpSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    if (!formData.otp || formData.otp.length !== 6) {
-      setError('Please enter a valid 6-digit OTP');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { success, error } = await verifyOTP(confirmationResult, formData.otp);
-      
-      if (!success) {
-        throw new Error(error || 'Failed to verify OTP');
-      }
-      // Success - user will be redirected via the useEffect hook
-    } catch (err) {
-      console.error('OTP verification error:', err);
-      setError(err.message || 'Invalid OTP. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEmailSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all required fields');
-      setLoading(false);
-      return;
-    }
 
     try {
       if (isLogin) {
-        // Login with email and password
-        const { success, error } = await logInWithEmail(formData.email, formData.password);
-        if (!success) {
-          // More specific error messages
-          if (error.includes('user-not-found') || error.includes('wrong-password')) {
-            throw new Error('Invalid email or password');
-          } else if (error.includes('too-many-requests')) {
-            throw new Error('Too many attempts. Please try again later.');
-          } else {
-            throw new Error(error || 'Failed to sign in');
-          }
-        }
-        // Success - user will be redirected via the useEffect hook
+        await logInWithEmailAndPassword(formData.email, formData.password);
       } else {
-        // Sign up with email, password, and name
         if (!formData.name) {
-          throw new Error('Name is required for sign up');
+          throw new Error('Name is required');
         }
-        const { success, error } = await signUpWithEmail(formData.name, formData.email, formData.password);
-        if (!success) {
-          if (error.includes('email-already-in-use')) {
-            throw new Error('This email is already registered. Please log in instead.');
-          } else if (error.includes('weak-password')) {
-            throw new Error('Password should be at least 6 characters');
-          } else {
-            throw new Error(error || 'Failed to create account');
-          }
-        }
+        await registerWithEmailAndPassword(formData.name, formData.email, formData.password);
       }
-      // Redirect is handled by the useEffect that watches the user state
-    } catch (err) {
-      console.error('Authentication error:', err);
-      setError(err.message || 'Failed to authenticate. Please try again.');
-    } finally {
+    } catch (error) {
+      console.error('Authentication error:', error);
+      setError(error.message || 'Authentication failed. Please try again.');
       setLoading(false);
-    }
-  };
-
-  const handleSubmit = loginMethod === 'email' ? handleEmailSubmit : handlePhoneSubmit;
-
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-  const handleGoogleLogin = async () => {
-    try {
-      setIsGoogleLoading(true);
-      setError('');
-      console.log('Initiating Google Sign-In...');
-      
-      const { success, error, code } = await signInWithGoogle();
-      
-      if (!success) {
-        // Don't show error if user closed the popup
-        if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
-          throw new Error(error || 'Failed to sign in with Google');
-        }
-        return;
-      }
-      
-      // If we get here, sign-in was successful
-      console.log('Google Sign-In completed successfully');
-      
-    } catch (err) {
-      console.error('Google sign in error:', err);
-      setError(err.message || 'Failed to sign in with Google. Please try again.');
-    } finally {
-      setIsGoogleLoading(false);
     }
   };
 
   if (loadingAuth) {
-    return (
-      <div className="login-container">
-        <div className="login-card">
-          <div className="loading-spinner"></div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+    return <div className="loading">Loading...</div>;
   }
 
   return (
     <div className="login-container">
-      <div className="login-box">
-        <h2>{isLogin ? 'Login' : 'Sign Up'}</h2>
-        
-        {/* Login Method Tabs */}
-        <div className="login-method-tabs">
-          <button 
-            className={`tab-button ${loginMethod === 'email' ? 'active' : ''}`}
-            onClick={() => setLoginMethod('email')}
-            type="button"
-          >
-            Email
-          </button>
-          <button 
-            className={`tab-button ${loginMethod === 'phone' ? 'active' : ''}`}
-            onClick={() => setLoginMethod('phone')}
-            type="button"
-          >
-            Phone
-          </button>
-        </div>
-        
+      <div className="login-form">
+        <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
         {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
         
-        {loginMethod === 'email' ? (
-          <form onSubmit={handleSubmit} className="login-form">
-            {!isLogin && (
-              <div className="form-group">
-                <label>Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter your name"
-                  required
-                />
-              </div>
-            )}
-            
+        {/* Google Sign In Button */}
+        <button 
+          type="button"
+          onClick={handleGoogleSignIn}
+          className="google-signin-button"
+          disabled={loading}
+        >
+          <FcGoogle className="google-icon" />
+          <span>{isLogin ? 'Sign in with Google' : 'Sign up with Google'}</span>
+        </button>
+
+        <div className="divider">
+          <span>OR</span>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {!isLogin && (
             <div className="form-group">
-              <label>Email</label>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
-                placeholder="Enter your email"
-                required
+                placeholder="Full Name"
+                disabled={loading}
+                required={!isLogin}
               />
             </div>
-            
-            <div className="form-group">
-              <label>Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                required
-                minLength="6"
-              />
-            </div>
-            
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}
-            </button>
-            
-            <div className="divider">or</div>
-            
+          )}
+
+          <div className="form-group">
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Email address"
+              disabled={loading}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Password"
+              disabled={loading}
+              required
+              minLength="6"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            className="primary-button" 
+            disabled={loading}
+          >
+            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
+          </button>
+        </form>
+
+        <div className="toggle-form">
+          <p>
+            {isLogin ? "Don't have an account? " : 'Already have an account? '}
             <button 
               type="button" 
-              className="google-button"
-              onClick={handleGoogleLogin}
-              disabled={isGoogleLoading}
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-button"
+              disabled={loading}
             >
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="google-icon" />
-              {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
+              {isLogin ? 'Sign up' : 'Sign in'}
             </button>
-            
-            <div className="switch-auth">
-              {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              <button 
-                type="button" 
-                className="switch-button"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError('');
-                }}
-              >
-                {isLogin ? 'Sign up' : 'Login'}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={showOtpInput ? handleOtpSubmit : handleSubmit} className="login-form">
-            {!showOtpInput ? (
-              <>
-                <div className="form-group">
-                  <label>Phone Number</label>
-                  <div className="phone-input-container">
-                    <span className="phone-prefix">+</span>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="1234567890"
-                      pattern="[0-9]{10,15}"
-                      required
-                    />
-                  </div>
-                  <p className="hint-text">We'll send a verification code to this number</p>
-                </div>
-                
-                <button type="submit" className="login-button" disabled={loading}>
-                  {loading ? 'Sending...' : 'Send Verification Code'}
-                </button>
-                
-                <div className="divider">or</div>
-                
-                <button 
-                  type="button" 
-                  className="google-button"
-                  onClick={handleGoogleLogin}
-                  disabled={isGoogleLoading}
-                >
-                  {isGoogleLoading ? (
-                    <>
-                      <div className="spinner"></div>
-                      <span>Signing in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <img 
-                        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-                        alt="Google" 
-                        className="google-icon" 
-                      />
-                      <span>Continue with Google</span>
-                    </>
-                  )}
-                </button>
-                
-                <div className="switch-auth">
-                  <button 
-                    type="button" 
-                    className="switch-button"
-                    onClick={() => setLoginMethod('email')}
-                  >
-                    Use Email Instead
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="form-group">
-                  <label>Enter Verification Code</label>
-                  <input
-                    type="text"
-                    name="otp"
-                    value={formData.otp}
-                    onChange={handleChange}
-                    placeholder="Enter 6-digit code"
-                    pattern="\d{6}"
-                    required
-                  />
-                  <p className="hint-text">Enter the 6-digit code sent to +{formData.phone}</p>
-                </div>
-                
-                <button type="submit" className="login-button" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Verify Code'}
-                </button>
-                
-                <button 
-                  type="button" 
-                  className="text-button"
-                  onClick={() => setShowOtpInput(false)}
-                  disabled={loading}
-                >
-                  Back to Phone Number
-                </button>
-              </>
-            )}
-            
-            {/* reCAPTCHA container - must be in the DOM but can be hidden */}
-            <div id="recaptcha-container" ref={recaptchaContainer} style={{ display: 'none' }}></div>
-          </form>
-        )}
+          </p>
+        </div>
       </div>
     </div>
   );

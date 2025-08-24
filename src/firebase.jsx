@@ -2,7 +2,6 @@ import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  signInWithPopup, 
   signInWithRedirect,
   getRedirectResult,
   signInWithEmailAndPassword, 
@@ -11,11 +10,8 @@ import {
   sendPasswordResetEmail, 
   signOut,
   RecaptchaVerifier,
-  signInWithPhoneNumber,
-  signInWithCredential,
-  PhoneAuthProvider
+  signInWithPhoneNumber
 } from 'firebase/auth';
-import { getAnalytics } from 'firebase/analytics';
 import { getFirestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
@@ -31,7 +27,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const db = getFirestore(app);

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import './App.css';
 import { CartProvider } from './components/CartContext';
-import { auth, getRedirectResult } from './firebase';
-import { GoogleAuthProvider } from 'firebase/auth';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { auth, getRedirectResult, GoogleAuthProvider } from './firebase';
 
 // Import components with proper error handling
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
@@ -60,21 +60,43 @@ class ErrorBoundary extends React.Component {
 
 // This component handles scrolling to hash fragments
 const ScrollToTop = () => {
-  const { pathname, hash } = useLocation();
+  const location = useLocation();
+  const { pathname, hash } = location;
 
   useEffect(() => {
-    if (hash === '') {
-      window.scrollTo(0, 0);
-    } else {
-      setTimeout(() => {
-        const id = hash.replace('#', '');
+    // Only run if we have a valid location object
+    if (!location) return;
+    
+    // Create a safe copy of the hash to prevent potential reference issues
+    const currentHash = hash || '';
+    
+    try {
+      if (!currentHash) {
+        // Scroll to top if no hash
+        window.scrollTo(0, 0);
+      } else {
+        // Scroll to element with matching ID
+        const id = currentHash.replace('#', '');
         const element = document.getElementById(id);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 0);
+        
+        // Use requestAnimationFrame for smoother scrolling
+        const scrollToElement = () => {
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        };
+        
+        // Small delay to ensure the DOM is ready
+        const timer = setTimeout(() => {
+          requestAnimationFrame(scrollToElement);
+        }, 50);
+        
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      console.error('Error in scroll handler:', error);
     }
-  }, [pathname, hash]);
+  }, [pathname, hash, location]);
 
   return null;
 };
@@ -82,7 +104,6 @@ const ScrollToTop = () => {
 // Main content component with all routes
 const AppContent = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [user, setUser] = useState(auth.currentUser);
   
   // Listen for auth state changes
@@ -102,10 +123,17 @@ const AppContent = () => {
         if (result) {
           // The signed-in user info
           const user = result.user;
-          console.log('Google Sign-In successful', { user });
+          console.log('Google Sign-In successful', { 
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName
+          });
           
-          // Redirect to home page after successful sign-in
-          navigate('/', { replace: true, state: { fromLogin: true } });
+          // Use a simpler navigation without complex state
+          navigate('/', { 
+            replace: true,
+            state: JSON.parse(JSON.stringify({ fromLogin: true })) // Ensure serializable state
+          });
         }
       } catch (error) {
         console.error('Google Sign-In Redirect Error:', error);
@@ -121,7 +149,11 @@ const AppContent = () => {
       }
     };
     
-    handleRedirect();
+    // Only run this effect when the component mounts
+    // and there's a redirect result to handle
+    if (window.location.pathname === '/login' && !window.location.hash) {
+      handleRedirect();
+    }
   }, [navigate]);
   
   // Initialize AOS
@@ -147,33 +179,44 @@ const AppContent = () => {
     return children;
   };
 
+  // Create a separate layout for the home page to avoid re-rendering everything
+  const HomeLayout = () => (
+    <>
+      <LandingPage />
+      <AboutSection data-aos="fade-up" />
+      <ImageSection data-aos="fade-up" data-aos-delay="100" />
+      <ProductsSection data-aos="fade-up" data-aos-delay="200" />
+      <GroundnutServices data-aos="fade-up" data-aos-delay="300" />
+      <ContactSection data-aos="fade-up" data-aos-delay="400" />
+    </>
+  );
+
+  // Debug: Log when AppContent renders and user state
+  console.log('AppContent rendering, user:', user);
+  console.log('Current path:', window.location.pathname);
+  console.log('Login route should render:', !(user && user.uid));
+
   return (
     <div className="App">
       <ErrorBoundary>
         <React.Suspense fallback={<LoadingFallback />}>
           <Routes>
-          <Route path="/" element={
-            <>
-              <LandingPage />
-              <AboutSection data-aos="fade-up" />
-              <ImageSection data-aos="fade-up" data-aos-delay="100" />
-              <ProductsSection data-aos="fade-up" data-aos-delay="200" />
-              <GroundnutServices data-aos="fade-up" data-aos-delay="300" />
-              <ContactSection data-aos="fade-up" data-aos-delay="400" />
-            </>
-          } />
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/product/:id" element={<ProductInfo />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } 
-          />
+            <Route path="/" element={<HomeLayout />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/product/:id" element={<ProductInfo />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route 
+              path="/login" 
+              element={user && user.uid ? <Navigate to="/" replace /> : <Login />} 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
             {/* Add a catch-all route for 404 pages */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -185,38 +228,27 @@ const AppContent = () => {
 
 // Main App component with providers
 const App = () => {
-  // Handle redirect result when the app loads
   useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log('Google Sign-In redirect result:', result);
-          // User is signed in, you can handle the result here
-          // For example, you might want to update the UI or redirect
-          // The user will be automatically signed in by Firebase
-        }
-      } catch (error) {
-        console.error('Error handling redirect result:', error);
-        // Handle any errors that occur during the redirect
-      }
-    };
-
-    // Check if we're coming back from a redirect
-    if (window.location.pathname === '/login' && window.location.hash === '') {
-      handleRedirectResult();
-    }
+    AOS.init({
+      duration: 800,
+      easing: 'ease-in-out',
+      once: true,
+    });
   }, []);
 
   return (
-    <React.StrictMode>
-      <Router>
+    <Router basename={process.env.PUBLIC_URL}>
+      <AuthProvider>
         <CartProvider>
           <ScrollToTop />
-          <AppContent />
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <AppContent />
+            </Suspense>
+          </ErrorBoundary>
         </CartProvider>
-      </Router>
-    </React.StrictMode>
+      </AuthProvider>
+    </Router>
   );
 };
 
