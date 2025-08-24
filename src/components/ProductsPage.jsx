@@ -49,14 +49,7 @@ const mockProducts = [
     image: 'https://i.ibb.co/qLZbxHYF/peanut4.jpg',
     category: 'roasted'
   },
-  {
-    id: 5,
-    name: 'Safe Harvest Pesticide-Free Roasted Groundnut (500g)',
-    description: 'Natural & delicious',
-    price: 123,
-    image: 'https://i.ibb.co/QFHC7H1/peanut5.jpg',
-    category: 'organic'
-  },
+  
   {
     id: 6,
     name: 'Jabsons Roasted Peanut Khari Sing with Skin (400g)',
@@ -111,14 +104,6 @@ const mockProducts = [
     description: 'Premium quality raw peanuts',
     price: 199,
     image: 'https://i.ibb.co/gM5ZjKyp/raw-peanut2.jpg',
-    category: 'raw'
-  },
-  {
-    id: 13,
-    name: 'Unpolished Raw Peanut',
-    description: 'Natural and unprocessed',
-    price: 175,
-    image: 'https://i.ibb.co/ccWJVF4/raw-peanut3.jpg',
     category: 'raw'
   }
 ];
