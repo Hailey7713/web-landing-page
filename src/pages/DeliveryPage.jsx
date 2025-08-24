@@ -78,45 +78,68 @@ const DeliveryPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
     
     setIsSubmitting(true);
     
-    const orderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-    const orderData = {
-      ...formData,
-      orderNumber,
-      orderDate: new Date().toLocaleString(),
-    };
-    
     try {
-      // 1. First, send the order to your backend (you'll need to implement this)
-      console.log('Order submitted:', orderData);
+      // Get cart items from localStorage
+      const cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
       
-      // 2. Send SMS notification to owner
-      const notificationSent = await sendOrderNotification(orderData);
-      
-      if (!notificationSent) {
-        console.warn('Failed to send SMS notification, but order was still placed');
+      if (cartItems.length === 0) {
+        throw new Error('Your cart is empty');
       }
       
-      // 3. Navigate to success page
+      // Calculate total amount
+      const totalAmount = cartItems.reduce((sum, item) => {
+        return sum + (item.price * item.quantity);
+      }, 0);
+      
+      // Create order object
+      const order = {
+        customerName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        items: cartItems,
+        totalAmount: totalAmount,
+        paymentMethod: formData.paymentMethod,
+        status: 'pending',
+        timestamp: new Date().toISOString()
+      };
+      
+      // Clear cart
+      localStorage.removeItem('cart');
+      
+      // Navigate directly to success page without waiting for API response
       navigate('/order-success', { 
         state: { 
-          orderDetails: orderData,
-          orderNumber,
-          notificationSent
+          orderDetails: order,
+          orderNumber: `ORD-${Date.now()}`,
+          notificationSent: false
         } 
       });
       
+      // Try to save the order in the background (non-blocking)
+      try {
+        await fetch('http://localhost:5001/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(order),
+        });
+      } catch (error) {
+        console.error('Background order save failed:', error);
+        // Continue even if the background save fails
+      }
     } catch (error) {
-      console.error('Error submitting order:', error);
-      setErrors(prev => ({
-        ...prev,
-        submit: 'Failed to place order. Please try again.'
-      }));
+      console.error('Error placing order:', error);
+      alert(error.message || 'Failed to place order. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

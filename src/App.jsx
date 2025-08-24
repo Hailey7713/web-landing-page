@@ -21,6 +21,7 @@ const GroundnutServices = React.lazy(() => import('./components/GroundnutService
 const ContactSection = React.lazy(() => import('./components/ContactSection'));
 const DeliveryPage = React.lazy(() => import('./pages/DeliveryPage'));
 const OrderSuccess = React.lazy(() => import('./components/OrderSuccess'));
+const AdminOrders = React.lazy(() => import('./pages/AdminOrders'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -207,6 +208,12 @@ const AppContent = () => {
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/product/:id" element={<ProductInfo />} />
             <Route path="/cart" element={<CartPage />} />
+            {/* Admin Routes */}
+            <Route path="/admin/orders" element={
+              <ProtectedRoute>
+                <AdminOrders />
+              </ProtectedRoute>
+            } />
             <Route 
               path="/delivery" 
               element={
@@ -220,15 +227,15 @@ const AppContent = () => {
               element={user && user.uid ? <Navigate to="/" replace /> : <Login />} 
             />
             <Route 
-              path="/profile" 
+              path="/order-success" 
               element={
                 <ProtectedRoute>
-                  <Profile />
+                  <OrderSuccess />
                 </ProtectedRoute>
               } 
             />
             <Route 
-              path="/order-success" 
+              path="/profile" 
               element={
                 <ProtectedRoute>
                   <OrderSuccess />

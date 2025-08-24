@@ -1,9 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const { connectDB } = require('./config/database');
 const Contact = require('./models/Contact');
 const twilio = require('twilio');
+const { saveOrder, getOrders } = require('./utils/orderStorage');
 
 // Initialize Twilio client
 const twilioClient = twilio(
@@ -14,38 +17,56 @@ const twilioClient = twilio(
 // Initialize Express app
 const app = express();
 
-// Enhanced CORS configuration
-const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
+// CORS configuration
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
 
-// Middleware
-app.use(cors(corsOptions));
+// CORS middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', true);
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
+// Body parsing middleware
 app.use(express.json());
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
 // Initialize database and start server
 const startServer = async () => {
+  const PORT = process.env.PORT || 5001;
+  
   try {
     // Connect to MongoDB
     const isConnected = await connectDB();
     if (!isConnected) {
-      throw new Error('Failed to connect to MongoDB');
+      console.error('Failed to connect to MongoDB');
+      process.exit(1);
     }
-
-    console.log('\n🚀 Application initialized successfully!');
-    console.log(`🌐 Server running on port ${process.env.PORT || 5001}`);
-    console.log(`🔗 API available at http://localhost:${process.env.PORT || 5001}/api\n`);
     
-    // Start listening for requests
-    const PORT = process.env.PORT || 5001;
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+    // Start the server
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n🚀 Application initialized successfully!');
+      console.log(`🌐 Server running on port ${PORT}`);
+      console.log(`🔗 API available at http://localhost:${PORT}/api\n`);
     });
     
   } catch (error) {
@@ -95,7 +116,56 @@ const sendOrderNotification = async (orderDetails) => {
   }
 };
 
-// API endpoint to send order notification
+// API endpoint to save order and send notification
+app.post('/api/orders', async (req, res) => {
+  try {
+    console.log('Received order request:', req.body);
+    const orderData = req.body;
+    
+    // Save order to JSON file
+    const { success, order, error } = saveOrder(orderData);
+    
+    if (!success) {
+      console.error('Failed to save order:', error);
+      return res.status(500).json({ success: false, error });
+    }
+
+    console.log('Order saved successfully:', order);
+    
+    // Send notification (optional)
+    try {
+      await sendOrderNotification(order);
+      console.log('Notification sent successfully');
+    } catch (notifError) {
+      console.error('Error sending notification:', notifError);
+      // Continue even if notification fails
+    }
+    
+    res.status(201).json({ 
+      success: true, 
+      order: {
+        ...order,
+        id: order.id || `ORD-${Date.now()}`
+      } 
+    });
+  } catch (error) {
+    console.error('Error processing order:', error);
+    res.status(500).json({ success: false, error: 'Failed to process order' });
+  }
+});
+
+// API endpoint to get all orders (for admin)
+app.get('/api/orders', (req, res) => {
+  try {
+    const orders = getOrders();
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+  }
+});
+
+// API endpoint to send order notification (kept for backward compatibility)
 app.post('/api/orders/notify', async (req, res) => {
   try {
     const { orderDetails } = req.body;

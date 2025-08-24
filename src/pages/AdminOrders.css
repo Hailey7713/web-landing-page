@@ -1,0 +1,186 @@
+/* Admin Orders Page Styling */
+
+.table {
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.03);
+}
+
+.table td, .table th {
+  vertical-align: middle;
+  padding: 1rem;
+}
+
+.status-badge {
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 600;
+  border-radius: 50rem;
+  text-transform: capitalize;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-radius: 0.2rem;
+}
+
+/* Status Badge Colors */
+.badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge-info {
+  background-color: #0dcaf0;
+  color: #000;
+}
+
+.badge-primary {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.badge-success {
+  background-color: #198754;
+  color: #fff;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+/* Action Buttons */
+.btn-outline-primary {
+  color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.btn-outline-success {
+  color: #198754;
+  border-color: #198754;
+}
+
+.btn-outline-success:hover {
+  background-color: #198754;
+  color: #fff;
+}
+
+.btn-outline-info {
+  color: #0dcaf0;
+  border-color: #0dcaf0;
+}
+
+.btn-outline-info:hover {
+  background-color: #0dcaf0;
+  color: #000;
+}
+
+/* Export Button */
+.btn-outline-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .table-responsive {
+    border: 0;
+  }
+  
+  .table thead {
+    display: none;
+  }
+  
+  .table, .table tbody, .table tr, .table td {
+    display: block;
+    width: 100%;
+  }
+  
+  .table tr {
+    margin-bottom: 1.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .table td {
+    text-align: right;
+    padding-left: 50%;
+    position: relative;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    width: 45%;
+    padding-right: 1rem;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: #6c757d;
+  }
+  
+  .table td:last-child {
+    border-bottom: 0;
+  }
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 0.35rem solid rgba(13, 110, 253, 0.1);
+  border-radius: 50%;
+  border-top-color: #0d6efd;
+  animation: spin 1s ease-in-out infinite;
+  margin: 2rem auto;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #dee2e6;
+}

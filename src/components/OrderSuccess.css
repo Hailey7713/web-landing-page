@@ -101,49 +101,56 @@
   font-style: italic;
 }
 
-.back-to-home-btn {
-  background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
-  color: white;
-  border: none;
-  padding: 0.9rem 2.5rem;
-  font-size: 1.05rem;
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
-  border-radius: 50px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 1rem;
-  box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.back-to-home-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 100%;
-  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
-  transition: all 0.3s ease;
-  z-index: -1;
+.action-btn svg {
+  font-size: 1.1rem;
 }
 
-.back-to-home-btn:hover {
+.home-btn {
+  background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+  color: white;
+}
+
+.home-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(142, 68, 173, 0.4);
+  box-shadow: 0 6px 15px rgba(142, 68, 173, 0.4);
 }
 
-.back-to-home-btn:hover::before {
-  width: 100%;
+.shop-btn {
+  background: white;
+  color: #2c3e50;
+  border: 2px solid #8e44ad;
 }
 
-.back-to-home-btn:active {
+.shop-btn:hover {
+  background: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(142, 68, 173, 0.4);
 }
 
 @keyframes fadeIn {

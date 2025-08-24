@@ -1,30 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaCheckCircle, FaPhone, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaShoppingBag } from 'react-icons/fa';
+import { FaCheckCircle, FaPhone, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaShoppingBag, FaHome, FaShoppingCart } from 'react-icons/fa';
 import './OrderSuccess.css';
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [timeLeft, setTimeLeft] = useState(10);
-  
   const { orderDetails, orderNumber, notificationSent } = location.state || {};
-
-  useEffect(() => {
-    // Redirect to home after 10 seconds
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [navigate]);
 
   if (!orderDetails) {
     return (
@@ -84,16 +66,20 @@ const OrderSuccess = () => {
           </div>
         )}
         
-        <p className="redirect-message">
-          You'll be redirected to the home page in {timeLeft} seconds...
-        </p>
-        
-        <button 
-          className="back-to-home-btn"
-          onClick={() => navigate('/')}
-        >
-          Back to Home
-        </button>
+        <div className="action-buttons">
+          <button 
+            className="action-btn home-btn"
+            onClick={() => navigate('/')}
+          >
+            <FaHome /> Back to Home
+          </button>
+          <button 
+            className="action-btn shop-btn"
+            onClick={() => navigate('/products')}
+          >
+            <FaShoppingCart /> Continue Shopping
+          </button>
+        </div>
       </div>
     </div>
   );
