@@ -22,6 +22,7 @@ const ContactSection = React.lazy(() => import('./components/ContactSection'));
 const DeliveryPage = React.lazy(() => import('./pages/DeliveryPage'));
 const OrderSuccess = React.lazy(() => import('./components/OrderSuccess'));
 const AdminOrders = React.lazy(() => import('./pages/AdminOrders'));
+const ProfileDashboard = React.lazy(() => import('./pages/ProfileDashboard'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -238,7 +239,7 @@ const AppContent = () => {
               path="/profile" 
               element={
                 <ProtectedRoute>
-                  <OrderSuccess />
+                  <ProfileDashboard />
                 </ProtectedRoute>
               } 
             />

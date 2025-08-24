@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCart } from './CartContext';
 import { getAuth } from 'firebase/auth';
+import { FaUser, FaSignInAlt } from 'react-icons/fa';
 import './LandingPage.css';
+import './HeaderControls.css';
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -115,13 +117,24 @@ function LandingPage() {
             >
               Cart {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
             </button>
-            <button 
-              className="theme-toggle" 
-              onClick={toggleDarkMode}
-              aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDarkMode ? '☀️' : '🌙'}
-            </button>
+            <div className="header-controls">
+              <button 
+                className="theme-toggle" 
+                onClick={toggleDarkMode}
+                aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
+              {currentUser ? (
+                <Link to="/profile" className="profile-icon" title="My Profile">
+                  <FaUser />
+                </Link>
+              ) : (
+                <Link to="/login" className="profile-icon" title="Login">
+                  <FaSignInAlt />
+                </Link>
+              )}
+            </div>
           </nav>
           
           {/* Mobile Menu Button */}

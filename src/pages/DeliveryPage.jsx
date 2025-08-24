@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getAuth } from 'firebase/auth';
 import './DeliveryPage.css';
 
 const DeliveryPage = () => {
@@ -13,6 +14,24 @@ const DeliveryPage = () => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const sendOrderNotification = async (orderData) => {
+    try {
+      const response = await fetch('http://localhost:5001/api/orders/notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderDetails: orderData }),
+      });
+      
+      const data = await response.json();
+      return data.success;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      return false;
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,30 +76,10 @@ const DeliveryPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const sendOrderNotification = async (orderData) => {
-    try {
-      const response = await fetch('http://localhost:5001/api/orders/notify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orderDetails: orderData }),
-      });
-      
-      const data = await response.json();
-      return data.success;
-    } catch (error) {
-      console.error('Error sending notification:', error);
-      return false;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    if (!validateForm()) {
       return;
     }
     
@@ -112,34 +111,65 @@ const DeliveryPage = () => {
         timestamp: new Date().toISOString()
       };
       
-      // Clear cart
-      localStorage.removeItem('cart');
+      // Send order notification
+      const notificationSent = await sendOrderNotification(order);
       
-      // Navigate directly to success page without waiting for API response
-      navigate('/order-success', { 
-        state: { 
-          orderDetails: order,
-          orderNumber: `ORD-${Date.now()}`,
-          notificationSent: false
-        } 
-      });
-      
-      // Try to save the order in the background (non-blocking)
-      try {
-        await fetch('http://localhost:5001/api/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(order),
-        });
-      } catch (error) {
-        console.error('Background order save failed:', error);
-        // Continue even if the background save fails
+      if (!notificationSent) {
+        console.warn('Failed to send order notification');
       }
+      
+      // Generate order number with random 4 digits
+      const random4Digits = Math.floor(1000 + Math.random() * 9000);
+      const orderNumber = `ORD-${random4Digits}-${Date.now().toString().slice(-4)}`;
+      
+      // Create order details object for storage
+      const orderDetails = {
+        orderNumber,
+        items: cartItems,
+        totalAmount,
+        address: formData.address,
+        phone: formData.phone,
+        email: formData.email,
+        paymentMethod: formData.paymentMethod,
+        orderDate: new Date().toISOString(),
+        status: 'Successful'
+      };
+      
+      // Save order to localStorage
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userOrders = JSON.parse(localStorage.getItem('userOrders') || '{}');
+        if (!userOrders[currentUser.uid]) {
+          userOrders[currentUser.uid] = [];
+        }
+        userOrders[currentUser.uid].push(orderDetails);
+        localStorage.setItem('userOrders', JSON.stringify(userOrders));
+      }
+      
+      // Clear cart after saving order
+      localStorage.removeItem('cart');
+      navigate('/order-success', {
+        state: {
+          orderDetails: {
+            orderNumber,
+            items: cartItems,
+            totalAmount,
+            address: formData.address,
+            phone: formData.phone,
+            email: formData.email,
+            paymentMethod: formData.paymentMethod,
+            orderDate: new Date().toLocaleDateString()
+          },
+          notificationSent: true
+        }
+      });
     } catch (error) {
       console.error('Error placing order:', error);
-      alert(error.message || 'Failed to place order. Please try again.');
+      setErrors(prev => ({
+        ...prev,
+        submit: error.message || 'Failed to place order. Please try again.'
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -241,6 +271,8 @@ const DeliveryPage = () => {
               {isSubmitting ? 'Placing Order...' : 'Place Order'}
             </button>
           </div>
+          
+          {errors.submit && <div className="form-error">{errors.submit}</div>}
         </form>
       </div>
     </div>

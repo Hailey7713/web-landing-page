@@ -1,0 +1,50 @@
+/* Header Controls */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 10px;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  transition: transform 0.2s, opacity 0.2s;
+  opacity: 0.8;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.profile-icon {
+  color: inherit;
+  font-size: 1.3rem;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  text-decoration: none;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.profile-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+/* Dark mode specific styles */
+.dark-mode .profile-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
