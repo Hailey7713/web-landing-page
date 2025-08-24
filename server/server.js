@@ -5,14 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { connectDB } = require('./config/database');
 const Contact = require('./models/Contact');
-const twilio = require('twilio');
 const { saveOrder, getOrders } = require('./utils/orderStorage');
-
-// Initialize Twilio client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
 
 // Initialize Express app
 const app = express();
@@ -82,38 +75,10 @@ const startServer = async () => {
   }
 };
 
-// Send SMS Notification
+// Order notification placeholder (previously used for Twilio)
 const sendOrderNotification = async (orderDetails) => {
-  try {
-    const message = `
-      🛒 New Order Received! 🛒
-      
-      Order #${orderDetails.orderNumber}
-      
-      👤 Customer Details:
-      Name: ${orderDetails.fullName}
-      Phone: ${orderDetails.phone}
-      Email: ${orderDetails.email}
-      
-      🏠 Delivery Address:
-      ${orderDetails.address}
-      
-      💰 Payment Method: Cash on Delivery
-      
-      Thank you for your order!
-    `;
-
-    await twilioClient.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: process.env.OWNER_PHONE_NUMBER
-    });
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending SMS:', error);
-    return { success: false, error: error.message };
-  }
+  console.log(`Order #${orderDetails.id} received from ${orderDetails.name} for $${orderDetails.totalAmount}`);
+  return { success: true };
 };
 
 // API endpoint to save order and send notification
