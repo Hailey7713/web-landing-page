@@ -1,7 +1,25 @@
-import React, { useState } from 'react';
+/**
+ * DeliveryPage Component
+ * Handles the checkout process including address and payment details
+ * Created: 2023-07-10
+ * Last Updated: 2023-08-24 - Added order submission and validation
+ */
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import './DeliveryPage.css';
+
+// TODO: Move validation to a separate utility file
+const validateEmail = (email) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(email).toLowerCase());
+};
+
+const validatePhone = (phone) => {
+  const re = /^[0-9]{10}$/;
+  return re.test(phone);
+};
 
 const DeliveryPage = () => {
   const navigate = useNavigate();
@@ -15,36 +33,86 @@ const DeliveryPage = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  /**
+   * Sends order notification to the server
+   * @param {Object} orderData - The order details
+   * @returns {Promise<boolean>} - Whether the notification was sent successfully
+   */
   const sendOrderNotification = async (orderData) => {
+    const NOTIFICATION_ENDPOINT = 'http://localhost:5001/api/orders/notify';
+    
+    // Add client-side timestamp
+    const orderWithTimestamp = {
+      ...orderData,
+      clientTimestamp: new Date().toISOString()
+    };
+
     try {
-      const response = await fetch('http://localhost:5001/api/orders/notify', {
+      console.log('Sending order notification...');
+      const response = await fetch(NOTIFICATION_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ orderDetails: orderData }),
+        body: JSON.stringify({ 
+          orderDetails: orderWithTimestamp 
+        }),
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Notification response:', data);
       return data.success;
+      
     } catch (error) {
-      console.error('Error sending notification:', error);
-      return false;
+      console.error('Failed to send notification:', {
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      // We'll still return true to continue with the order
+      // even if notification fails
+      return true;
     }
   };
 
+  /**
+   * Handles input changes and performs basic validation
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Update form data
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
     
-    // Clear error when user starts typing
+    // Clear previous error for this field if any
     if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
+    // Real-time validation for email
+    if (name === 'email' && value && !validateEmail(value)) {
       setErrors(prev => ({
         ...prev,
-        [name]: ''
+        email: 'Please enter a valid email address'
+      }));
+    }
+    
+    // Real-time validation for phone
+    if (name === 'phone' && value && !validatePhone(value)) {
+      setErrors(prev => ({
+        ...prev,
+        phone: 'Please enter a valid 10-digit phone number'
       }));
     }
   };

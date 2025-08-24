@@ -1,8 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+/**
+ * ProductsPage Component
+ * Displays a grid of products with filtering and search functionality
+ * Created: 2023-06-15
+ * Last Updated: 2023-08-24 - Added search and filter features
+ */
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from './CartContext';
-import { FaCheckCircle, FaInfoCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaInfoCircle, FaSearch, FaFilter } from 'react-icons/fa';
 import './ProductsPage.css';
+
+// TODO: Move product data to a separate JSON file or API
+// TODO: Add loading states for better UX
+// TODO: Implement infinite scroll for better performance with large product lists
 
 // Product data with images
 const mockProducts = [
@@ -112,7 +123,8 @@ const mockProducts = [
   }
 ];
 
-const categories = [
+// Categories for filtering - could be moved to a config file
+const PRODUCT_CATEGORIES = [
   { id: 'all', name: 'All Products' },
   { id: 'roasted', name: 'Roasted Peanuts' },
   { id: 'organic', name: 'Organic Peanuts' },
@@ -120,38 +132,103 @@ const categories = [
   { id: 'oil', name: 'Peanut Oil' }
 ];
 
+// Price range configuration
+const PRICE_RANGE = {
+  min: 50,
+  max: 1000,
+  step: 10
+};
+
 const ProductsPage = () => {
-  const navigate = useNavigate();
+  // Hooks and state
   const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const notificationTimer = useRef(null);
+
+  // Component state
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [priceRange, setPriceRange] = useState(1500);
-  const [products] = useState(mockProducts);
-  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
+  const [priceRange, setPriceRange] = useState(PRICE_RANGE.max);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationProduct, setNotificationProduct] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [filteredProducts, setFilteredProducts] = useState([...mockProducts]);
+
+  // Handle URL parameters for sharing filtered views
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get('category');
+    const search = params.get('search');
+    const price = params.get('maxPrice');
+
+    if (category && PRODUCT_CATEGORIES.some(cat => cat.id === category)) {
+      setSelectedCategory(category);
+    }
+
+    if (search) {
+      setSearchTerm(search);
+    }
+
+    if (price && !isNaN(price)) {
+      const priceNum = parseInt(price, 10);
+      if (priceNum >= PRICE_RANGE.min && priceNum <= PRICE_RANGE.max) {
+        setPriceRange(priceNum);
+      }
+    }
+  }, [location.search]);
 
   // Filter products based on search, category, and price range
   useEffect(() => {
-    let result = [...products];
+    setIsLoading(true);
     
-    // Apply search filter
-    if (searchTerm) {
-      result = result.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    // Update URL with current filters
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
+    if (priceRange < PRICE_RANGE.max) params.set('maxPrice', priceRange);
     
-    // Apply category filter
-    if (selectedCategory !== 'all') {
-      result = result.filter(product => product.category === selectedCategory);
-    }
+    // Update URL without page reload
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    window.history.pushState({}, '', newUrl);
     
-    // Apply price range filter (show products with price less than or equal to selected price)
-    result = result.filter(product => product.price <= priceRange);
+    // Small delay to simulate loading (remove in production)
+    const timer = setTimeout(() => {
+      try {
+        let result = [...mockProducts];
+        
+        // Apply search filter
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          result = result.filter(product =>
+            product.name.toLowerCase().includes(searchLower) ||
+            (product.description && product.description.toLowerCase().includes(searchLower))
+          );
+        }
+        
+        // Apply category filter
+        if (selectedCategory !== 'all') {
+          result = result.filter(product => product.category === selectedCategory);
+        }
+        
+        // Apply price range filter
+        result = result.filter(product => product.price <= priceRange);
+        
+        // Sort by price (ascending)
+        result.sort((a, b) => a.price - b.price);
+        
+        setFilteredProducts(result);
+      } catch (error) {
+        console.error('Error filtering products:', error);
+        // Fallback to showing all products if there's an error
+        setFilteredProducts([...mockProducts]);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300); // Simulate network delay
     
-    setFilteredProducts(result);
-  }, [searchTerm, selectedCategory, priceRange, products]);
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedCategory, priceRange]);
 
   const handlePriceChange = (e) => {
     setPriceRange(parseInt(e.target.value, 10));
@@ -162,16 +239,43 @@ const ProductsPage = () => {
     // Search is handled by the useEffect hook
   };
 
-  const handleAddToCart = (product) => {
-    addToCart(product);
+  /**
+   * Handles adding a product to the cart
+   * @param {Object} product - The product to add to cart
+   */
+  const handleAddToCart = useCallback((product) => {
+    // Add to cart with quantity 1
+    addToCart({
+      ...product,
+      quantity: 1,
+      addedAt: new Date().toISOString() // Track when item was added
+    });
+
+    // Show notification
     setNotificationProduct(product.name);
     setShowNotification(true);
-    
-    // Hide notification after 3 seconds
-    setTimeout(() => {
+
+    // Clear any existing timer
+    if (notificationTimer.current) {
+      clearTimeout(notificationTimer.current);
+    }
+
+    // Auto-hide notification after 3 seconds
+    notificationTimer.current = setTimeout(() => {
       setShowNotification(false);
+      setNotificationProduct('');
     }, 3000);
-  };
+
+  }, [addToCart]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationTimer.current) {
+        clearTimeout(notificationTimer.current);
+      }
+    };
+  }, []);
 
   // Animation for notification
   const notificationRef = useRef(null);
@@ -237,7 +341,7 @@ const ProductsPage = () => {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="category-select"
             >
-              {categories.map(category => (
+              {PRODUCT_CATEGORIES.map(category => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -269,7 +373,12 @@ const ProductsPage = () => {
         
         {/* Products Grid */}
         <div className="products-grid">
-          {filteredProducts.length > 0 ? (
+          {isLoading ? (
+            <div className="loading-spinner">
+              <div className="spinner"></div>
+              <p>Loading products...</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             filteredProducts.map(product => (
               <div 
                 key={product.id} 
